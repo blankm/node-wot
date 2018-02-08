@@ -23,11 +23,11 @@
 // global W3C WoT Scripting API definitions
 import _ from 'node-wot'; // 'wot-typescript-definitions';
 // node-wot implementation of W3C WoT Servient 
-import {Servient} from 'node-wot';
-import {HttpServer} from "node-wot-protocol-http";
+import { Servient } from 'node-wot';
+import { HttpServer } from "node-wot-protocol-http";
 
 // exposed protocols
-import {CoapServer} from 'node-wot-protocol-coap';
+import { CoapServer } from 'node-wot-protocol-coap';
 
 
 // local definition
@@ -37,7 +37,7 @@ import {CoapServer} from 'node-wot-protocol-coap';
 //   b: number
 // }
 
-let wotaas: WoT.ExposedThing; 
+let wotaas: WoT.ExposedThing;
 // let gradient: Array<Color>;
 // let gradientTimer: any;
 // let gradIndex: number = 0;
@@ -59,144 +59,104 @@ function main() {
   let wot = servient.start();
   console.info('RaspberryServient started');
 
-  let thingInit : WoT.ThingTemplate = {'name': 'wotaas'};
- 
+  let thingInit: WoT.ThingTemplate = { 'name': 'wotaas' };
+
+  // XXX: Add wot context
 
   let thing = wot.expose(thingInit);
-  //wot.expose(thingInit).then(thing => {
+  if (typeof thing != undefined) {
     wotaas = thing;
 
-    let thingPropertyInitBrightness : WoT.ThingPropertyInit = {
-      name: 'brightness', 
-      writable: true, 
-      type: JSON.stringify({ "type": "integer", 'minimum': 0, 'maximum': 255 }),
-      initValue: 50,
-      onWrite: (old, nu) => {
-        setBrightness(nu);
-      }
-    };
-    
-    let thingPropertyInitColor : WoT.ThingPropertyInit = {
-      name : 'color',
-      type: JSON.stringify({
-        'type': 'object',
-        'properties': {
-           'r': { 'type': 'integer', 'minimum': 0, 'maximum': 255 },
-           'g': { 'type': 'integer', 'minimum': 0, 'maximum': 255 },
-           'b': { 'type': 'integer', 'minimum': 0, 'maximum': 255 }
-         }
-      }),
-      initValue : { r: 0, g: 0, b: 0 },
-      onWrite : (old, nu) => {
-        setAll(nu.r, nu.g, nu.b);
-      }
+    let thingPropertyAASID: WoT.ThingPropertyInit = {
+      name: 'id',
+      writable: false,
+      observable: false,
+      semanticTypes: [{ name: 'aasid', context: 'http://siemens.com/wotaas/context', prefix: 'wotaas' }],
+      type: JSON.stringify({ "type": "URI" }),
+      initValue: "siemens.com/wotaas/device1"      
     };
 
-    let thingActionInitGradient : WoT.ThingActionInit = {
-      name : 'gradient',
-      inputType: JSON.stringify({
-        'type': 'array',
-        'items': {
-          'type': 'object',
-          'properties': {
-            'r' : { 'type': 'integer', 'minimum': 0, 'maximum': 255 },
-            'g' : { 'type': 'integer', 'minimum': 0, 'maximum': 255 },
-            'b' : { 'type': 'integer', 'minimum': 0, 'maximum': 255 }
-          }
-        },
-        'minItems': 2
-      }),
-      outputType: JSON.stringify({'type': 'string'}),
-      action: (gradarray: Array<Color>) => {
-          if(gradarray.length < 2){ return "{minItems: 2}"; }
-
-	  wotaas.invokeAction('cancel');
-
-          gradient = gradarray;
-          gradIndex = 0;
-          gradNow = gradient[0];
-          gradNext = gradient[1];
-          gradVector = {
-            r: (gradNext.r - gradNow.r) / 20,
-            g: (gradNext.g - gradNow.g) / 20,
-            b: (gradNext.b - gradNow.b) / 20
-          };
-          gradientTimer = setInterval(gradientStep, 50);
-          return 'OK';
-        
-      }
-    };
-    let thingActionInitCancel : WoT.ThingActionInit = {
-      name : 'cancel',
-      inputType: null,
-      outputType: JSON.stringify({'type': 'string'}),
-	action: () => {
-          if (gradientTimer) {
-            console.log('>> canceling timer');
-            clearInterval(gradientTimer);
-            gradientTimer = null;
-          }
-	  return 'OK';
-	}
-    };
-    wotaas
-      .addProperty(thingPropertyInitBrightness)
-      .addProperty(thingPropertyInitColor)
-      .addAction(thingActionInitGradient)
-      .addAction(thingActionInitCancel);
-    // // implementations
-    // let rhBrightness : WoT.RequestHandler;
-    // // rhBrightness.name = "brightness";
-    // rhBrightness.callback.call = (nu, old) => {
-    //   setBrightness(nu);
-    // }
-
-    // wotaas.onUpdateProperty(rhBrightness);
-
-    // wotaas
-    //   .onUpdateProperty('brightness', (nu, old) => {
+    // let thingPropertyInitBrightness: WoT.ThingPropertyInit = {
+    //   name: 'brightness',
+    //   writable: true,
+    //   type: JSON.stringify({ "type": "integer", 'minimum': 0, 'maximum': 255 }),
+    //   initValue: 50,
+    //   onWrite: (old, nu) => {
     //     setBrightness(nu);
-    //   })
-      // .onUpdateProperty('color', (nu, old) => {
-      //   setAll(nu.r, nu.g, nu.b);
-      // })
-      // .onInvokeAction('gradient', (input: Array<Color>) => {
-      //   if (input.length < 2) {
-      //     return '{ "minItems": 2 }';
-      //   }
-      //   wotaas.invokeAction('cancel');
+    //   }
+    // };
 
-      //   gradient = input;
-      //   gradIndex = 0;
-      //   gradNow = gradient[0];
-      //   gradNext = gradient[1];
-      //   gradVector = {
-      //     r: (gradNext.r - gradNow.r) / 20,
-      //     g: (gradNext.g - gradNow.g) / 20,
-      //     b: (gradNext.b - gradNow.b) / 20
-      //   };
-      //   gradientTimer = setInterval(gradientStep, 50);
-      //   return true;
-      // })
-      // .onInvokeAction('forceColor', (input: Color) => {
-      //   wotaas.invokeAction('cancel');
-      //   wotaas.setProperty('color', input);
-      //   return true;
-      // })
-      // .onInvokeAction('cancel', (input) => {
-      //   if (gradientTimer) {
-      //     console.log('>> canceling timer');
-      //     clearInterval(gradientTimer);
-      //     gradientTimer = null;
-      //   }
-      // })
-      //;
-    // initialize
-    // wotaas.setProperty('brightness', 50);
-    // wotaas.setProperty('color', { r: 0, g: 0, b: 0 });
-  // };
+    // let thingPropertyInitColor: WoT.ThingPropertyInit = {
+    //   name: 'color',
+    //   type: JSON.stringify({
+    //     'type': 'object',
+    //     'properties': {
+    //       'r': { 'type': 'integer', 'minimum': 0, 'maximum': 255 },
+    //       'g': { 'type': 'integer', 'minimum': 0, 'maximum': 255 },
+    //       'b': { 'type': 'integer', 'minimum': 0, 'maximum': 255 }
+    //     }
+    //   }),
+    //   initValue: { r: 0, g: 0, b: 0 },
+    //   onWrite: (old, nu) => {
+    //     setAll(nu.r, nu.g, nu.b);
+    //   }
+    // };
 
-  //});
+    // let thingActionInitGradient: WoT.ThingActionInit = {
+    //   name: 'gradient',
+    //   inputType: JSON.stringify({
+    //     'type': 'array',
+    //     'items': {
+    //       'type': 'object',
+    //       'properties': {
+    //         'r': { 'type': 'integer', 'minimum': 0, 'maximum': 255 },
+    //         'g': { 'type': 'integer', 'minimum': 0, 'maximum': 255 },
+    //         'b': { 'type': 'integer', 'minimum': 0, 'maximum': 255 }
+    //       }
+    //     },
+    //     'minItems': 2
+    //   }),
+    //   outputType: JSON.stringify({ 'type': 'string' }),
+    //   action: (gradarray: Array<Color>) => {
+    //     if (gradarray.length < 2) { return "{minItems: 2}"; }
+
+    //     wotaas.invokeAction('cancel');
+
+    //     gradient = gradarray;
+    //     gradIndex = 0;
+    //     gradNow = gradient[0];
+    //     gradNext = gradient[1];
+    //     gradVector = {
+    //       r: (gradNext.r - gradNow.r) / 20,
+    //       g: (gradNext.g - gradNow.g) / 20,
+    //       b: (gradNext.b - gradNow.b) / 20
+    //     };
+    //     gradientTimer = setInterval(gradientStep, 50);
+    //     return 'OK';
+
+    //   }
+    // };
+    // let thingActionInitCancel: WoT.ThingActionInit = {
+    //   name: 'cancel',
+    //   inputType: null,
+    //   outputType: JSON.stringify({ 'type': 'string' }),
+    //   action: () => {
+    //     if (gradientTimer) {
+    //       console.log('>> canceling timer');
+    //       clearInterval(gradientTimer);
+    //       gradientTimer = null;
+    //     }
+    //     return 'OK';
+    //   }
+    // };
+    // wotaas
+    //   .addProperty(thingPropertyInitBrightness)
+    //   .addProperty(thingPropertyInitColor)
+    //   .addAction(thingActionInitGradient)
+    //   .addAction(thingActionInitCancel);
+  }
+
+
 }
 
 // helper
