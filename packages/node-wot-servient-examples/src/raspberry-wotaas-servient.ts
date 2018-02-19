@@ -31,19 +31,89 @@ import { CoapServer } from 'node-wot-protocol-coap';
 
 
 // local definition
-// declare interface Color {
-//   r: number,
-//   g: number,
-//   b: number
-// }
+enum AASIDType {
+    URI,
+    ISO29005_5
+}
+
+enum AASDataType {
+  BOOL, 
+  FLOAT, 
+  DOUBLE, 
+  STRING, 
+  INT32, 
+  INT64, 
+  UINT32, 
+  UINT64, 
+  IDENTIFICATION
+}
+
+enum AASSemLogic{
+  EQUAL,
+  GREATERTHAN,
+  GREATEROREQUALTHAN,
+  LESSERTHAN,
+  LESSEROREQUALTHAN
+}
+
+enum AASSemType{
+  ASSURANCE,
+  REQUIREMENT,
+  MEASUREMENT, 
+  SETTING
+}
+
+declare interface PVSInternal {
+  name: string,
+  IDSpec: string, // Either URI or ISO29005_5
+  IDSpecType: AASIDType,
+  dataType: AASDataType,
+  value: any,
+  expressionSemantic: AASSemType,
+  expressionLogic: AASSemLogic,
+
+  // Views
+  // Visibility
+  // List to appear in (this is not needed since directly stored in list)
+}
+
+declare interface PVS extends PVSInternal {
+  parentPVSL_ID: USVString,
+  // Views
+  // Visibility  
+}
+
+declare interface PVSL {
+  name: string,
+  carrierID: USVString, //assetID!
+  parentSubmodelID: USVString, // URI of submodel  
+}
+
+declare interface PVSLInternal extends PVSL {
+  statements: Array<PVSInternal>
+}
+
+
+declare interface Submodel {
+  name: string,
+  parentID: USVString, //ID of AAS, not of Asset
+  modelID: USVString,  //"SubModel Definition ID"
+  version: number,
+  revision: number
+
+  //'placement' : string XXX: How to handle placement?
+}
+
+declare interface SubmodelInternal extends Submodel {
+  subthing : wotaas.ExposedThing,
+  PVSLs : Array<PVSL>
+}
+
 
 let wotaas: WoT.ExposedThing;
-// let gradient: Array<Color>;
-// let gradientTimer: any;
-// let gradIndex: number = 0;
-// let gradNow: Color;
-// let gradNext: Color;
-// let gradVector: Color;
+
+let submodels: Array<SubmodelInternal>;
+
 
 main();
 
@@ -61,19 +131,172 @@ function main() {
 
   let thingInit: WoT.ThingTemplate = { 'name': 'wotaas' };
 
-  // XXX: Add wot context
+  // XXX: Add wotaas context
 
   let thing = wot.expose(thingInit);
   if (typeof thing != undefined) {
     wotaas = thing;
 
+    // Link to Asset this AAS is for
     let thingPropertyAASID: WoT.ThingPropertyInit = {
-      name: 'id',
+      name: 'assetid',
       writable: false,
       observable: false,
-      semanticTypes: [{ name: 'aasid', context: 'http://siemens.com/wotaas/context', prefix: 'wotaas' }],
+      semanticTypes: [{ name: 'assetid', context: 'http://siemens.com/wotaas/context', prefix: 'wotaas' }],
       type: JSON.stringify({ "type": "URI" }),
       initValue: "siemens.com/wotaas/device1"      
+    };
+
+    // Assuming user with full rights, showing all available services
+ 
+    // Services
+
+    // Create Submodel
+    let thingActionInitCreateSubmodel: WoT.ThingActionInit = {
+      name: 'createsubmodel',
+      inputType: JSON.stringify({
+        'type': 'object',
+        'properties': {
+          'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
+          'parentID': { 'type': 'URI' },
+          'modelID': { 'type': 'URI' },
+          'version': { 'type' : 'integer', 'minimum': 0 },
+          'revision': { 'type': 'integer', 'minimum': 0 }//,
+          //'placement' : {} XXX: How to handle placement?
+        }
+      }),
+      // TODO: Can output be of different structure depending on statuscode?
+      outputType: JSON.stringify({
+        'type': 'object',
+        'properties': {
+          'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 },
+          'uri': { 'type': 'URI' }
+        }
+      }),
+      action: (newmodel: Submodel) => {
+
+        // Perform checks on input data and try to create new model
+        try {
+          if (newmodel.name.length < 3 || newmodel.name.length > 255) {
+            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+          }
+          //Check if name or other identifier already existent
+          for (let smodel of submodels) {
+            // TODO: Is modelID also to be checked?
+            if (smodel.name == newmodel.name) {
+              return JSON.stringify({ 'statuscode': 409, 'uri': null });
+            }
+          }
+          //Check parentID and modelID for proper URI
+          // TODO: Is this an URL or can it be an URI?
+          
+          // Check revision and version          
+          if(newmodel.revision < 0 || newmodel.version < 0)
+          {
+            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+          }
+          
+
+        } catch (error) {
+          console.warn('Creating new Submodel failed (0). ' + error);
+          return JSON.stringify({'statuscode': 500, 'uri': null});
+        }        
+
+        // create new submodel
+
+        let newsub: SubmodelInternal;
+
+        newsub.name = newmodel.name;
+        newsub.modelID = newmodel.modelID;
+        newsub.parentID = newmodel.parentID;
+        newsub.revision = newmodel.revision;
+        newsub.version = newmodel.version;
+
+        // TODO: Submodel TD structure still a bit unclear
+        // What will be name, how to show that it is a submodel? Metadata?
+        //
+
+        // create thing for new submodel
+        let subThing: WoT.ThingTemplate = { 'name': newsub.name };
+        // Add metadata
+
+        // let thingPropertyAASID: WoT.ThingPropertyInit = {
+        //   name: 'assetid',
+        //   writable: false,
+        //   observable: false,
+        //   semanticTypes: [{ name: 'assetid', context: 'http://siemens.com/wotaas/context', prefix: 'wotaas' }],
+        //   type: JSON.stringify({ "type": "URI" }),
+        //   initValue: "siemens.com/wotaas/device1"
+        // };
+
+        // Submodel TD is prepared, expose it
+        newsub.subthing = wot.expose(subThing);        
+
+        submodels.push(newsub);     
+
+        //return '200' + urri; // XXX: URI where TD of new submodel can be found
+        return JSON.stringify({ 'statuscode': 200, 'uri': '/' + newsub.name });
+      }
+    };
+
+    // Delete Submodel
+    let thingActionInitDeleteSubmodel: WoT.ThingActionInit = {
+      name: 'deletesubmodel',
+      inputType: JSON.stringify({
+        'type': 'object',
+        'properties': {
+          'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
+          'parentID': { 'type': 'URI' },
+          'modelID': { 'type': 'URI' },
+          'version': { 'type' : 'integer', 'minimum': 0 },
+          'revision': { 'type': 'integer', 'minimum': 0 }//,
+          //'placement' : {} XXX: How to handle placement?
+        }
+      }),
+      outputType: JSON.stringify({
+        'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 },
+      }),
+      action: (delmodel: Submodel) => {
+
+        // Perform checks on inut data and try to locate submodel and delete it        
+        try {
+          // Check name
+          if (delmodel.name.length < 3 || delmodel.name.length > 255) {
+            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+          }
+                    
+          // Check parentID and modelID for proper URI
+          // TODO: Is this an URL or can it be an URI?
+          
+          // Check revision and version          
+          if(delmodel.revision < 0 || delmodel.version < 0)
+          {
+            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+          }          
+
+        } catch (error) {
+          console.warn('Deleting Submodel failed (0). ' + error);
+          return JSON.stringify({'statuscode': 500, 'uri': null});
+        }
+
+        //Check if name or other identifier existent
+        for (let smodel of submodels) {
+          if (smodel.name == delmodel.name && smodel.modelID == delmodel.modelID && smodel.parentID == delmodel.parentID && smodel.revision == delmodel.revision && smodel.version == delmodel.version) {
+            // This is the model to be deleted
+            // Check if the Submodel hast PVSL running
+            if(smodel.PVSLs.length > 0)
+            {
+              // TODO: Do we break here and say, client must delete PVSL first or do we do it for the client?
+
+            }
+            // XXX: Right now TDs can't be removed, so this function must always fail for now :(
+            return JSON.stringify({'statuscode': 500});  
+          }
+        }       
+
+        return JSON.stringify({'statuscode': 404});
+
+      }
     };
 
     // let thingPropertyInitBrightness: WoT.ThingPropertyInit = {
@@ -149,8 +372,10 @@ function main() {
     //     return 'OK';
     //   }
     // };
-    // wotaas
-    //   .addProperty(thingPropertyInitBrightness)
+    wotaas
+      .addProperty(thingPropertyAASID)
+      .addAction(thingActionInitCreateSubmodel)
+      .addAction(thingActionInitDeleteSubmodel);
     //   .addProperty(thingPropertyInitColor)
     //   .addAction(thingActionInitGradient)
     //   .addAction(thingActionInitCancel);
@@ -160,6 +385,21 @@ function main() {
 }
 
 // helper
+
+function ValidURL(str) {
+  var pattern = new RegExp('^(https?:\/\/)?'+ // protocol
+    '((([a-z\d]([a-z\d-]*[a-z\d])*)\.)+[a-z]{2,}|'+ // domain name
+    '((\d{1,3}\.){3}\d{1,3}))'+ // OR ip (v4) address
+    '(\:\d+)?(\/[-a-z\d%_.~+]*)*'+ // port and path
+    '(\?[;&a-z\d%_.~+=-]*)?'+ // query string
+    '(\#[-a-z\d_]*)?$','i'); // fragment locater
+  if(!pattern.test(str)) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
 // function roundColor(color: Color): Color {
 //   return { r: Math.round(color.r), g: Math.round(color.g), b: Math.round(color.b) };
 // }
