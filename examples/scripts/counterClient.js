@@ -1,6 +1,7 @@
 var targetUri = "http://localhost:8080/counter";
 var targetUriProperties = "http://localhost:8080/counter/properties";
 var counterUri = "http://localhost:8080/counter/properties/count";
+
 WoT.fetchTD(targetUri)
 .then(function(td) {
 	let thing = WoT.consume(td);
