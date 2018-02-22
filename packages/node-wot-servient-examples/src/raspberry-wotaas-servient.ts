@@ -105,7 +105,7 @@ declare interface Submodel {
 }
 
 declare interface SubmodelInternal extends Submodel {
-  subthing : wotaas.ExposedThing,
+  subthing : WoT.ExposedThing,
   PVSLs : Array<PVSL>
 }
 
@@ -180,14 +180,14 @@ function main() {
           if (newmodel.name.length < 3 || newmodel.name.length > 255) {
             return JSON.stringify({ 'statuscode': 400, 'uri': null });
           }
-          //Check if name or other identifier already existent
+          // Check if name or other identifier already existent
           for (let smodel of submodels) {
             // TODO: Is modelID also to be checked?
             if (smodel.name == newmodel.name) {
               return JSON.stringify({ 'statuscode': 409, 'uri': null });
             }
           }
-          //Check parentID and modelID for proper URI
+          // Check parentID and modelID for proper URI
           // TODO: Is this an URL or can it be an URI?
           
           // Check revision and version          
@@ -299,6 +299,72 @@ function main() {
       }
     };
 
+    // Create PVSL/C
+    let thingActionInitCreatePVSL: WoT.ThingActionInit = {
+      name: 'createPVSL',
+      inputType: JSON.stringify({
+        'type': 'object',
+        'properties': {
+          'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
+          'carrierID': { 'type': 'URI' },
+          'parentSubmodelID': { 'type': 'URI' }
+        }
+      }),
+      // TODO: Can output be of different structure depending on statuscode?
+      outputType: JSON.stringify({
+        'type': 'object',
+        'properties': {
+          'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 },
+          'uri': { 'type': 'URI' }
+        }
+      }),
+      action: (newpvsl: PVSL) => {
+
+        // Perform checks on input data and try to create new PVSL
+        try {
+          if (newpvsl.name.length < 3 || newpvsl.name.length > 255) {
+            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+          }
+          // Check if parentSubmodel exists //XXX: Check if this okay like it is written
+          for (let smodel of submodels) {           
+            if (smodel.modelID == newpvsl.parentSubmodelID) {
+              // Ok, submodel exists, go on
+              // Check if name or other identifier already existent
+              for (let list of smodel.PVSLs) {
+                // TODO: Is carriedID also to be checked?
+                if (list.name == newpvsl.name) {
+                  return JSON.stringify({ 'statuscode': 409, 'uri': null });
+                }
+              }              
+
+              // create new PVSL and link it
+              let npvsl: PVSLInternal;
+              npvsl.name = newpvsl.name;
+              npvsl.carrierID = newpvsl.carrierID;
+              npvsl.parentSubmodelID = newpvsl.parentSubmodelID;
+
+              smodel.PVSLs.push(npvsl);
+
+              // Create new subproperty for the pvsl
+              // TODO: create property
+
+              // Return 500 until function is complete
+              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+            }
+          }
+          
+          
+
+        } catch (error) {
+          console.warn('Creating new Submodel failed (0). ' + error);
+          return JSON.stringify({'statuscode': 500, 'uri': null});
+        } 
+
+        //return '400' since submodel could not be found
+        return JSON.stringify({ 'statuscode': 400, 'uri': null });
+      }
+    };
+
     // let thingPropertyInitBrightness: WoT.ThingPropertyInit = {
     //   name: 'brightness',
     //   writable: true,
@@ -376,17 +442,12 @@ function main() {
       .addProperty(thingPropertyAASID)
       .addAction(thingActionInitCreateSubmodel)
       .addAction(thingActionInitDeleteSubmodel);
-    //   .addProperty(thingPropertyInitColor)
-    //   .addAction(thingActionInitGradient)
-    //   .addAction(thingActionInitCancel);
-  }
-
-
+   
 }
 
 // helper
 
-function ValidURL(str) {
+function ValidURL(str: string) {
   var pattern = new RegExp('^(https?:\/\/)?'+ // protocol
     '((([a-z\d]([a-z\d-]*[a-z\d])*)\.)+[a-z]{2,}|'+ // domain name
     '((\d{1,3}\.){3}\d{1,3}))'+ // OR ip (v4) address
