@@ -130,7 +130,7 @@ function main() {
     console.info('RaspberryServient started');
 
     // XXX: Add wotaas context, check what this si about with metadata and semantictypes
-    let thingInit: WoT.ThingTemplate = { name: 'wotaas'};
+    let thingInit: WoT.ThingTemplate = { name: 'wotaas' };
 
     let thing = wot.produce(thingInit);
     if (typeof thing != undefined) {
@@ -142,7 +142,7 @@ function main() {
         writable: false,
         observable: false,
         //semanticTypes: [{ name: 'assetid', context: 'http://siemens.com/wotaas/context', prefix: 'wotaas' }],
-        type: JSON.stringify({ "type": "URI" }),
+        type: JSON.stringify({ "type": "uri" }),
         value: "siemens.com/wotaas/device1"
       };
 
@@ -151,14 +151,14 @@ function main() {
       // Services
 
       // Create Submodel
-      let thingActionInitCreateSubmodel: WoT.ThingActionInit = {
-        name: 'createsubmodel',        
+      let thingActionCreateSubmodel: WoT.ThingActionInit = {
+        name: 'createsubmodel',
         inputDataDescription: JSON.stringify({
           'type': 'object',
           'properties': {
             'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
-            'parentID': { 'type': 'URI' },
-            'modelID': { 'type': 'URI' },
+            'parentID': { 'type': 'uri' },
+            'modelID': { 'type': 'uri' },
             'version': { 'type': 'integer', 'minimum': 0 },
             'revision': { 'type': 'integer', 'minimum': 0 }//,
             //'placement' : {} XXX: How to handle placement?
@@ -169,20 +169,20 @@ function main() {
           'type': 'object',
           'properties': {
             'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 },
-            'uri': { 'type': 'URI' }
+            'uri': { 'type': 'uri' }
           }
         })
       };
 
       // Delete Submodel
-      let thingActionInitDeleteSubmodel: WoT.ThingActionInit = {
+      let thingActionDeleteSubmodel: WoT.ThingActionInit = {
         name: 'deletesubmodel',
         inputDataDescription: JSON.stringify({
           'type': 'object',
           'properties': {
             'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
-            'parentID': { 'type': 'URI' },
-            'modelID': { 'type': 'URI' },
+            'parentID': { 'type': 'uri' },
+            'modelID': { 'type': 'uri' },
             'version': { 'type': 'integer', 'minimum': 0 },
             'revision': { 'type': 'integer', 'minimum': 0 }//,
             //'placement' : {} XXX: How to handle placement?
@@ -194,14 +194,14 @@ function main() {
       };
 
       // Create PVSL/C
-      let thingActionInitCreatePVSL: WoT.ThingActionInit = {
-        name: 'createPVSL',
+      let thingActionCreatePVSL: WoT.ThingActionInit = {
+        name: 'createpvsl',
         inputDataDescription: JSON.stringify({
           'type': 'object',
           'properties': {
             'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
-            'carrierID': { 'type': 'URI' },
-            'parentSubmodelID': { 'type': 'URI' }
+            'carrierID': { 'type': 'uri' },
+            'parentSubmodelID': { 'type': 'uri' }
           }
         }),
         // TODO: Can output be of different structure depending on statuscode?
@@ -209,107 +209,174 @@ function main() {
           'type': 'object',
           'properties': {
             'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 },
-            'uri': { 'type': 'URI' }
+            'uri': { 'type': 'uri' }
           }
         })
       };
 
+      // Delete PVSL/C
+      let thingActionDeletePVSL: WoT.ThingActionInit = {
+        name: 'deletepvsl',
+        inputDataDescription: JSON.stringify({
+          'type': 'object',
+          'properties': {
+            'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
+            'carrierID': { 'type': 'uri' },
+            'parentSubmodelID': { 'type': 'uri' }
+          }
+        }),
+        // TODO: Can output be of different structure depending on statuscode?
+        outputDataDescription: JSON.stringify({
+          'type': 'object',
+          'properties': {
+            'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 }
+          }
+        })
+      };
+
+      // Create PVS
+      let thingActionCreatePVS: WoT.ThingActionInit = {
+        name: 'createpvs',
+        inputDataDescription: JSON.stringify({
+          'type': 'object',
+          'properties': {
+            'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
+            'IDSpec': { 'type': 'string' },
+            'IDSpecType': { 'type': 'string', 'enum': ['URI', 'ISO29005_5'] },
+            'dataType': { 'type': 'string', 'enum': ['BOOL', 'FLOAT', 'DOUBLE', 'STRING', 'INT32', 'INT64', 'UINT32', 'UINT64', 'IDENTIFICATION'] },
+            'value': { 'type': 'any' },
+            'expressionSemantic': { 'type': 'string', 'enum': ['ASSURANCE', 'REQUIREMENT', 'MEASUREMENT', 'SETTING'] },
+            'expressionLogic': { 'type': 'string', 'enum': ['EQUAL', 'GREATERTHAN', 'GREATEROREQUALTHAN', 'LESSERTHAN', 'LESSEROREQUALTHAN'] },
+            'PVSLID': { 'type': 'uri' }
+          }
+        }),
+        // TODO: Can output be of different structure depending on statuscode?
+        outputDataDescription: JSON.stringify({
+          'type': 'object',
+          'properties': {
+            'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 },
+            'uri': { 'type': 'uri' }
+          }
+        })
+      };
+
+      // Delete PVS
+      let thingActionDeletePVS: WoT.ThingActionInit = {
+        name: 'deletepvs',
+        inputDataDescription: JSON.stringify({
+          'type': 'object',
+          'properties': {
+            'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
+            'IDSpec': { 'type': 'string' },
+            'IDSpecType': { 'type': 'string', 'enum': ['URI', 'ISO29005_5'] },
+            'dataType': { 'type': 'string', 'enum': ['BOOL', 'FLOAT', 'DOUBLE', 'STRING', 'INT32', 'INT64', 'UINT32', 'UINT64', 'IDENTIFICATION'] },
+            'expressionSemantic': { 'type': 'string', 'enum': ['ASSURANCE', 'REQUIREMENT', 'MEASUREMENT', 'SETTING'] },
+            'expressionLogic': { 'type': 'string', 'enum': ['EQUAL', 'GREATERTHAN', 'GREATEROREQUALTHAN', 'LESSERTHAN', 'LESSEROREQUALTHAN'] },
+            'PVSLID': { 'type': 'uri' }
+          }
+        }),
+        // TODO: Can output be of different structure depending on statuscode?
+        outputDataDescription: JSON.stringify({
+          'type': 'object',
+          'properties': {
+            'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 }
+          }
+        })
+      };
 
       wotaas
         .addProperty(thingPropertyAASID)
         // AASID needs no handler, is readonly
-        .addAction(thingActionInitCreateSubmodel)
+        .addAction(thingActionCreateSubmodel)
         .setActionHandler(
-          (newmodel: Submodel) => {
-            return new Promise((resolve, reject) => {
-              // Perform checks on input data and try to create new model
-              try {
-                if (newmodel.name.length < 3 || newmodel.name.length > 255) {
-                  return JSON.stringify({ 'statuscode': 400, 'uri': null });
+        (newmodel: Submodel) => {
+          return new Promise((resolve, reject) => {
+            // Perform checks on input data and try to create new model
+            try {
+              if (newmodel.name.length < 3 || newmodel.name.length > 255) {
+                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+              }
+              // Check if name or other identifier already existent
+              for (let smodel of submodels) {
+                // TODO: Is modelID also to be checked?
+                if (smodel.name == newmodel.name) {
+                  return JSON.stringify({ 'statuscode': 409, 'uri': null });
                 }
-                // Check if name or other identifier already existent
-                for (let smodel of submodels) {
-                  // TODO: Is modelID also to be checked?
-                  if (smodel.name == newmodel.name) {
-                    return JSON.stringify({ 'statuscode': 409, 'uri': null });
-                  }
-                }
-                // Check parentID and modelID for proper URI
-                // TODO: Is this an URL or can it be an URI?
+              }
+              // Check parentID and modelID for proper URI
+              // TODO: Is this an URL or can it be an URI?
 
-                // Check revision and version          
-                if (newmodel.revision < 0 || newmodel.version < 0) {
-                  return JSON.stringify({ 'statuscode': 400, 'uri': null });
-                }
-
-
-              } catch (error) {
-                console.warn('Creating new Submodel failed (0). ' + error);
-                return JSON.stringify({ 'statuscode': 500, 'uri': null });
+              // Check revision and version          
+              if (newmodel.revision < 0 || newmodel.version < 0) {
+                return JSON.stringify({ 'statuscode': 400, 'uri': null });
               }
 
-              // create new submodel
 
-              let newsub: SubmodelInternal;
+            } catch (error) {
+              console.warn('Creating new Submodel failed (0). ' + error);
+              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+            }
 
+            // create new submodel
+
+            let newsub: SubmodelInternal;
+            try {
               newsub.name = newmodel.name;
               newsub.modelID = newmodel.modelID;
               newsub.parentID = newmodel.parentID;
               newsub.revision = newmodel.revision;
               newsub.version = newmodel.version;
+            } catch (error) {
+              console.warn('Creating new Submodel failed (1). ' + error);
+              return JSON.stringify({ 'statuscode': 500, 'uri': null });             
+            }
 
-              // TODO: Submodel TD structure still a bit unclear
-              // What will be name, how to show that it is a submodel? Metadata?
-              //
 
-              // create thing for new submodel
-              let subThing: WoT.ThingTemplate = { 'name': newsub.name };
-              // Add metadata
+            // TODO: Submodel TD structure still a bit unclear
+            // What will be name, how to show that it is a submodel? Metadata?
+            //
 
-              // let thingPropertyAASID: WoT.ThingPropertyInit = {
-              //   name: 'assetid',
-              //   writable: false,
-              //   observable: false,
-              //   semanticTypes: [{ name: 'assetid', context: 'http://siemens.com/wotaas/context', prefix: 'wotaas' }],
-              //   type: JSON.stringify({ "type": "URI" }),
-              //   initValue: "siemens.com/wotaas/device1"
-              // };
+            // create thing for new submodel
+            let subThing: WoT.ThingTemplate = { 'name': newsub.name };
+            
+            // Add metadata
+            // TODO: Mark as Submodel
 
-              // Submodel TD is prepared, expose it
-              newsub.subthing = wot.produce(subThing);
+            // Submodel TD is prepared, expose it
+            newsub.subthing = wot.produce(subThing);
 
-              submodels.push(newsub);
+            submodels.push(newsub);
 
-              //'200' + urri; // XXX: URI where TD of new submodel can be found 
-              resolve(JSON.stringify({ 'statuscode': 200, 'uri': '/' + newsub.name }));
-            });
-          },
-          thingActionInitCreateSubmodel.name
+            //'200' + urri; // XXX: URI where TD of new submodel can be found 
+            resolve(JSON.stringify({ 'statuscode': 200, 'uri': '/' + newsub.name }));
+          });
+        },
+        thingActionCreateSubmodel.name
         )
-        .addAction(thingActionInitDeleteSubmodel)
+        .addAction(thingActionDeleteSubmodel)
         .setActionHandler(
-          (delmodel: Submodel) => {
-            return new Promise((resolve, reject) => {
-              // Perform checks on inut data and try to locate submodel and delete it        
-              try {
-                // Check name
-                if (delmodel.name.length < 3 || delmodel.name.length > 255) {
-                  return JSON.stringify({ 'statuscode': 400, 'uri': null });
-                }
-
-                // Check parentID and modelID for proper URI
-                // TODO: Is this an URL or can it be an URI?
-
-                // Check revision and version          
-                if (delmodel.revision < 0 || delmodel.version < 0) {
-                  return JSON.stringify({ 'statuscode': 400, 'uri': null });
-                }
-
-              } catch (error) {
-                console.warn('Deleting Submodel failed (0). ' + error);
-                return JSON.stringify({ 'statuscode': 500, 'uri': null });
+        (delmodel: Submodel) => {
+          return new Promise((resolve, reject) => {
+            // Perform checks on inut data and try to locate submodel and delete it        
+            try {
+              // Check name
+              if (delmodel.name.length < 3 || delmodel.name.length > 255) {
+                return JSON.stringify({ 'statuscode': 400, 'uri': null });
               }
 
+              // Check parentID and modelID for proper URI
+              // TODO: Is this an URL or can it be an URI?
+
+              // Check revision and version          
+              if (delmodel.revision < 0 || delmodel.version < 0) {
+                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+              }
+
+            } catch (error) {
+              console.warn('Deleting Submodel failed (0). ' + error);
+              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+            }
+            try {
               //Check if name or other identifier existent
               for (let smodel of submodels) {
                 if (smodel.name == delmodel.name && smodel.modelID == delmodel.modelID && smodel.parentID == delmodel.parentID && smodel.revision == delmodel.revision && smodel.version == delmodel.version) {
@@ -324,57 +391,100 @@ function main() {
                 }
               }
               resolve(JSON.stringify({ 'statuscode': 404 }));
-            });
-          },
-          thingActionInitDeleteSubmodel.name
+            } catch (error) {
+              console.warn('Deleting Submodel failed (1). ' + error);
+              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+            }            
+          });
+        },
+        thingActionDeleteSubmodel.name
         )
-        .addAction(thingActionInitCreatePVSL)
+        .addAction(thingActionCreatePVSL)
         .setActionHandler(
-          (newpvsl: PVSL) => {
-            return new Promise((resolve, reject) => {
-              // Perform checks on input data and try to create new PVSL
-              try {
-                if (newpvsl.name.length < 3 || newpvsl.name.length > 255) {
-                  return JSON.stringify({ 'statuscode': 400, 'uri': null });
-                }
-                // Check if parentSubmodel exists //XXX: Check if this okay like it is written
-                for (let smodel of submodels) {
-                  if (smodel.modelID == newpvsl.parentSubmodelID) {
-                    // Ok, submodel exists, go on
-                    // Check if name or other identifier already existent
-                    for (let list of smodel.PVSLs) {
-                      // TODO: Is carriedID also to be checked?
-                      if (list.name == newpvsl.name) {
-                        return JSON.stringify({ 'statuscode': 409, 'uri': null });
-                      }
+        (newpvsl: PVSL) => {
+          return new Promise((resolve, reject) => {
+            // Perform checks on input data and try to create new PVSL
+            try {
+              if (newpvsl.name.length < 3 || newpvsl.name.length > 255) {
+                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+              }
+              // Check additional fields
+              // TODO Check fields
+
+              // Check if parentSubmodel exists //XXX: Check if this okay like it is written
+              for (let smodel of submodels) {
+                if (smodel.modelID == newpvsl.parentSubmodelID) {
+                  // Ok, submodel exists, go on
+                  // Check if name or other identifier already existent
+                  for (let list of smodel.PVSLs) {
+                    // TODO: Is carriedID also to be checked?
+                    if (list.name == newpvsl.name) {
+                      return JSON.stringify({ 'statuscode': 409, 'uri': null });
                     }
-
-                    // create new PVSL and link it
-                    let npvsl: PVSLInternal;
-                    npvsl.name = newpvsl.name;
-                    npvsl.carrierID = newpvsl.carrierID;
-                    npvsl.parentSubmodelID = newpvsl.parentSubmodelID;
-
-                    smodel.PVSLs.push(npvsl);
-
-                    // Create new subproperty for the pvsl
-                    // TODO: create property
-
-                    // Return 500 until function is complete
-                    return JSON.stringify({ 'statuscode': 500, 'uri': null });
                   }
-                }
 
-              } catch (error) {
-                console.warn('Creating new Submodel failed (0). ' + error);
-                return JSON.stringify({ 'statuscode': 500, 'uri': null });
+                  // create new PVSL and link it
+                  let npvsl: PVSLInternal;
+                  npvsl.name = newpvsl.name;
+                  npvsl.carrierID = newpvsl.carrierID;
+                  npvsl.parentSubmodelID = newpvsl.parentSubmodelID;
+                  npvsl.statements = new Array<PVSInternal>();
+                  smodel.PVSLs.push(npvsl);                  
+
+                  // Create new subproperty for the pvsl
+                  // TODO: create property
+                  let thingPropertyNewPVSL: WoT.ThingPropertyInit = {
+                    name: npvsl.name,
+                    writable: false,
+                    observable: true,
+                    //semanticTypes: [{ name: 'assetid', context: 'http://siemens.com/wotaas/context', prefix: 'wotaas' }],
+                    type: JSON.stringify(
+                      { 'type': 'object',
+                        'properties': {
+                          'name': { 'type': 'string' }, 
+                          'carriedID': { 'type': 'uri' },
+                          'parentSubmodelID': { 'type': 'uri' },
+                          'pvs': {
+                            'type': 'array',
+                            'items': {
+                              'type': 'object',
+                              'properties': {
+                                'name': { 'type': 'string' },
+                                'IDSpec': { 'type': 'string' },
+                                'IDSpecType': { 'type': 'string', 'enum': ['URI', 'ISO29005_5'] },
+                                'dataType': { 'type': 'string', 'enum': ['BOOL', 'FLOAT', 'DOUBLE', 'STRING', 'INT32', 'INT64', 'UINT32', 'UINT64', 'IDENTIFICATION'] },
+                                'expressionSemantic': { 'type': 'string', 'enum': ['ASSURANCE', 'REQUIREMENT', 'MEASUREMENT', 'SETTING'] },
+                                'expressionLogic': { 'type': 'string', 'enum': ['EQUAL', 'GREATERTHAN', 'GREATEROREQUALTHAN', 'LESSERTHAN', 'LESSEROREQUALTHAN'] }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ),
+                    value: JSON.stringify({'name': newpvsl.name, 'carriedID': newpvsl.carrierID, 'parentSubmodelID': newpvsl.parentSubmodelID, 'pvs': []})
+                  };
+                  smodel.subthing.addProperty(thingPropertyNewPVSL);
+                  smodel.subthing.setPropertyReadHandler(
+                    //TODO: Write handler as soon as structure is clear
+                    thingPropertyNewPVSL.name
+                  );
+
+                  // Return 500 until function is complete
+                  return JSON.stringify({ 'statuscode': 500, 'uri': null });
+                  //resolve(JSON.stringify({ 'statuscode': 404 }));
+                }
               }
 
-              //return '400' since submodel could not be found
-              return JSON.stringify({ 'statuscode': 400, 'uri': null });
-            });
-          },
-          thingActionInitCreatePVSL.name
+            } catch (error) {
+              console.warn('Creating new Submodel failed (0). ' + error);
+              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+            }
+
+            //return '400' since submodel could not be found
+            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+          });
+        },
+        thingActionCreatePVSL.name
         );
     }
   });
