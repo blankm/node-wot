@@ -309,8 +309,16 @@ export default class ExposedThing extends ConsumedThing implements WoT.ExposedTh
     /** @inheritDoc */
     setPropertyReadHandler(readHandler: WoT.PropertyReadHandler, propertyName? : string) : ExposedThing {
         // TODO if propertyName not set it is a default handler
-        // TODO set readHandler
-        throw Error("Not yet implemented to set propertyReadHandler");
+        // if (propertyName) {
+        //     console.info("set onRead handler for " + propertyName);
+        //     if(this.interactionStates[propertyName]) {
+        //         this.interactionStates[propertyName].handlers.push(readHandler);
+        //     } else {
+        //         throw Error("Unknown property " + propertyName);
+        //     }
+        // } else {
+            throw Error("Not yet implemented to set any propertyReadHandler");
+        // }
 
         // return this;
     }

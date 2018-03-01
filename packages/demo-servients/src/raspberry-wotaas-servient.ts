@@ -446,6 +446,7 @@ function main() {
                           'parentSubmodelID': { 'type': 'uri' },
                           'pvs': {
                             'type': 'array',
+                            'uniqueItems': 'true',
                             'items': {
                               'type': 'object',
                               'properties': {
@@ -464,10 +465,23 @@ function main() {
                     value: JSON.stringify({'name': newpvsl.name, 'carriedID': newpvsl.carrierID, 'parentSubmodelID': newpvsl.parentSubmodelID, 'pvs': []})
                   };
                   smodel.subthing.addProperty(thingPropertyNewPVSL);
-                  smodel.subthing.setPropertyReadHandler(
-                    //TODO: Write handler as soon as structure is clear
+                  // Right now for updating the PVSL entries we must make use of this writehandler 
+                  // Procedure: Read list, perform update on list, write back, writeHandler then updates presented data
+                  smodel.subthing.setPropertyWriteHandler(
+                    (newcomplete: PVSLInternal) => {
+                      return new Promise((resolve, reject) => {
+                        
+                        resolve();
+                      });
+                    },
                     thingPropertyNewPVSL.name
                   );
+                  //TODO: Write readHandler as soon as implemented
+                  // XXX: Since no readHandler or writeHandler is set up by now, 
+                  //smodel.subthing.setPropertyReadHandler(
+                    
+                  //  thingPropertyNewPVSL.name
+                  //);
 
                   // Return 500 until function is complete
                   return JSON.stringify({ 'statuscode': 500, 'uri': null });
