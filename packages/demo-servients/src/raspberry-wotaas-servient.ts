@@ -446,7 +446,8 @@ function main() {
                           'parentSubmodelID': { 'type': 'uri' },
                           'pvs': {
                             'type': 'array',
-                            'uniqueItems': 'true',
+                            'uniqueItems': true,
+                            'additionalItems': false,
                             'items': {
                               'type': 'object',
                               'properties': {
@@ -465,27 +466,16 @@ function main() {
                     value: JSON.stringify({'name': newpvsl.name, 'carriedID': newpvsl.carrierID, 'parentSubmodelID': newpvsl.parentSubmodelID, 'pvs': []})
                   };
                   smodel.subthing.addProperty(thingPropertyNewPVSL);
-                  // Right now for updating the PVSL entries we must make use of this writehandler 
-                  // Procedure: Read list, perform update on list, write back, writeHandler then updates presented data
-                  smodel.subthing.setPropertyWriteHandler(
-                    (newcomplete: PVSLInternal) => {
-                      return new Promise((resolve, reject) => {
-                        
-                        resolve();
-                      });
-                    },
-                    thingPropertyNewPVSL.name
-                  );
-                  //TODO: Write readHandler as soon as implemented
-                  // XXX: Since no readHandler or writeHandler is set up by now, 
+                  // Right now for updating the PVSL entries we must use writeProperty to update value
+
+                  //TODO: Write readHandler as soon as implemented                  
                   //smodel.subthing.setPropertyReadHandler(
                     
                   //  thingPropertyNewPVSL.name
                   //);
-
-                  // Return 500 until function is complete
-                  return JSON.stringify({ 'statuscode': 500, 'uri': null });
-                  //resolve(JSON.stringify({ 'statuscode': 404 }));
+                  
+                  //XXX: Check returned uri, what way is useful, what should be returned?
+                  resolve(JSON.stringify({ 'statuscode': 200, 'uri' : null }));
                 }
               }
 
