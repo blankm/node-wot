@@ -107,7 +107,7 @@ declare interface Submodel {
 
 declare interface SubmodelInternal extends Submodel {
   subthing: WoT.ExposedThing,
-  PVSLs: Array<PVSL>
+  PVSLs: Array<PVSLInternal>
 }
 
 
@@ -244,7 +244,7 @@ function main() {
             'IDSpec': { 'type': 'string' },
             'IDSpecType': { 'type': 'string', 'enum': ['URI', 'ISO29005_5'] },
             'dataType': { 'type': 'string', 'enum': ['BOOL', 'FLOAT', 'DOUBLE', 'STRING', 'INT32', 'INT64', 'UINT32', 'UINT64', 'IDENTIFICATION'] },
-            'value': { 'type': 'any' },
+            'value': {},
             'expressionSemantic': { 'type': 'string', 'enum': ['ASSURANCE', 'REQUIREMENT', 'MEASUREMENT', 'SETTING'] },
             'expressionLogic': { 'type': 'string', 'enum': ['EQUAL', 'GREATERTHAN', 'GREATEROREQUALTHAN', 'LESSERTHAN', 'LESSEROREQUALTHAN'] },
             'PVSLID': { 'type': 'uri' }
@@ -260,6 +260,7 @@ function main() {
         })
       };
 
+      // XXX: This here is a problem, value is no needed argument, create new type for deleting PVS?
       // Delete PVS
       let thingActionDeletePVS: WoT.ThingActionInit = {
         name: 'deletepvs',
@@ -318,37 +319,37 @@ function main() {
             }
 
             // create new submodel
-
-            let newsub: SubmodelInternal;
             try {
-              newsub.name = newmodel.name;
-              newsub.modelID = newmodel.modelID;
-              newsub.parentID = newmodel.parentID;
-              newsub.revision = newmodel.revision;
-              newsub.version = newmodel.version;
+              // TODO: Submodel TD structure still a bit unclear
+              // What will be name, how to show that it is a submodel? Metadata?
+              // Proposal: link to aas-TD, additional metadata showing its an aas-sm
+              //           
+
+              // create thing for new submodel
+              let subThing: WoT.ThingTemplate = { 'name': newmodel.name };
+
+              // Add metadata
+              // TODO: Mark as Submodel
+
+              let newsub: SubmodelInternal = {
+                name: newmodel.name,
+                modelID: newmodel.modelID,
+                parentID: newmodel.parentID,
+                revision: newmodel.revision,
+                version: newmodel.version,
+                PVSLs: new Array<PVSLInternal>(),
+                subthing: wot.produce(subThing)
+              };
+
+              submodels.push(newsub);
+
             } catch (error) {
               console.warn('Creating new Submodel failed (1). ' + error);
-              return JSON.stringify({ 'statuscode': 500, 'uri': null });             
+              return JSON.stringify({ 'statuscode': 500, 'uri': null });
             }
 
-
-            // TODO: Submodel TD structure still a bit unclear
-            // What will be name, how to show that it is a submodel? Metadata?
-            //
-
-            // create thing for new submodel
-            let subThing: WoT.ThingTemplate = { 'name': newsub.name };
-            
-            // Add metadata
-            // TODO: Mark as Submodel
-
-            // Submodel TD is prepared, expose it
-            newsub.subthing = wot.produce(subThing);
-
-            submodels.push(newsub);
-
             //'200' + urri; // XXX: URI where TD of new submodel can be found 
-            resolve(JSON.stringify({ 'statuscode': 200, 'uri': '/' + newsub.name }));
+            resolve(JSON.stringify({ 'statuscode': 200, 'uri': '/' + newmodel.name }));
           });
         },
         thingActionCreateSubmodel.name
@@ -364,8 +365,9 @@ function main() {
                 return JSON.stringify({ 'statuscode': 400, 'uri': null });
               }
 
-              // Check parentID and modelID for proper URI
-              // TODO: Is this an URL or can it be an URI?
+              // parentID and modelID have to be checked only for length,
+              // if it is no valid URI the check will fail anyway later
+              // TODO Check these
 
               // Check revision and version          
               if (delmodel.revision < 0 || delmodel.version < 0) {
@@ -394,7 +396,7 @@ function main() {
             } catch (error) {
               console.warn('Deleting Submodel failed (1). ' + error);
               return JSON.stringify({ 'statuscode': 500, 'uri': null });
-            }            
+            }
           });
         },
         thingActionDeleteSubmodel.name
@@ -424,24 +426,26 @@ function main() {
                   }
 
                   // create new PVSL and link it
-                  let npvsl: PVSLInternal;
-                  npvsl.name = newpvsl.name;
-                  npvsl.carrierID = newpvsl.carrierID;
-                  npvsl.parentSubmodelID = newpvsl.parentSubmodelID;
-                  npvsl.statements = new Array<PVSInternal>();
-                  smodel.PVSLs.push(npvsl);                  
+                  let npvsl: PVSLInternal = {
+                    name: newpvsl.name,
+                    carrierID: newpvsl.carrierID,
+                    parentSubmodelID: newpvsl.parentSubmodelID,
+                    statements: new Array<PVSInternal>()
+                  };
+                  smodel.PVSLs.push(npvsl);
 
-                  // Create new subproperty for the pvsl
-                  // TODO: create property
+                  // Create new property for the pvsl
+                  // TODO: Add metadata to express it is a pvsl 
                   let thingPropertyNewPVSL: WoT.ThingPropertyInit = {
                     name: npvsl.name,
                     writable: false,
                     observable: true,
                     //semanticTypes: [{ name: 'assetid', context: 'http://siemens.com/wotaas/context', prefix: 'wotaas' }],
                     type: JSON.stringify(
-                      { 'type': 'object',
+                      {
+                        'type': 'object',
                         'properties': {
-                          'name': { 'type': 'string' }, 
+                          'name': { 'type': 'string' },
                           'carriedID': { 'type': 'uri' },
                           'parentSubmodelID': { 'type': 'uri' },
                           'pvs': {
@@ -455,6 +459,7 @@ function main() {
                                 'IDSpec': { 'type': 'string' },
                                 'IDSpecType': { 'type': 'string', 'enum': ['URI', 'ISO29005_5'] },
                                 'dataType': { 'type': 'string', 'enum': ['BOOL', 'FLOAT', 'DOUBLE', 'STRING', 'INT32', 'INT64', 'UINT32', 'UINT64', 'IDENTIFICATION'] },
+                                'value' : {},
                                 'expressionSemantic': { 'type': 'string', 'enum': ['ASSURANCE', 'REQUIREMENT', 'MEASUREMENT', 'SETTING'] },
                                 'expressionLogic': { 'type': 'string', 'enum': ['EQUAL', 'GREATERTHAN', 'GREATEROREQUALTHAN', 'LESSERTHAN', 'LESSEROREQUALTHAN'] }
                               }
@@ -463,19 +468,19 @@ function main() {
                         }
                       }
                     ),
-                    value: JSON.stringify({'name': newpvsl.name, 'carriedID': newpvsl.carrierID, 'parentSubmodelID': newpvsl.parentSubmodelID, 'pvs': []})
+                    value: JSON.stringify({ 'name': newpvsl.name, 'carriedID': newpvsl.carrierID, 'parentSubmodelID': newpvsl.parentSubmodelID, 'pvs': [] })
                   };
                   smodel.subthing.addProperty(thingPropertyNewPVSL);
                   // Right now for updating the PVSL entries we must use writeProperty to update value
 
                   //TODO: Write readHandler as soon as implemented                  
                   //smodel.subthing.setPropertyReadHandler(
-                    
+
                   //  thingPropertyNewPVSL.name
                   //);
-                  
+
                   //XXX: Check returned uri, what way is useful, what should be returned?
-                  resolve(JSON.stringify({ 'statuscode': 200, 'uri' : null }));
+                  resolve(JSON.stringify({ 'statuscode': 200, 'uri': null }));
                 }
               }
 
@@ -489,6 +494,68 @@ function main() {
           });
         },
         thingActionCreatePVSL.name
+        )
+        .addAction(thingActionCreatePVSL)
+        .setActionHandler(
+        (newpvs: PVS) => {
+          return new Promise((resolve, reject) => {
+            // Perform checks on input data and try to create new PVS
+            try {
+              if (newpvs.name.length < 3 || newpvs.name.length > 255) {
+                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+              }
+              // Check additional fields
+              // TODO Check fields for correct values if needed (some will fail at check anyway)
+
+              // Check if parentPVSL exists //XXX: Check if this okay like it is written
+              for (let smodel of submodels) {
+                for(let list of smodel.PVSLs) {
+                  // XXX: What is the ID of the list?
+                  if(newpvs.parentPVSL_ID == list.name)
+                  {
+                    // Okay we have the right list, check for doubles
+                    for(let pvss of list.statements)
+                    {
+                      if(newpvs.name == pvss.name || (newpvs.IDSpec == pvss.IDSpec && newpvs.IDSpecType == pvss.IDSpecType))
+                      {
+                        // Some other entry with either the name of the ID exists
+                        return JSON.stringify({ 'statuscode': 409, 'uri': null });
+                      }
+                    }
+
+                    // Okay, no doubles so far, we can create the PVS entry
+                    let newpvs_int : PVSInternal = {
+                      name: newpvs.name,
+                      IDSpec : newpvs.IDSpec,
+                      IDSpecType : newpvs.IDSpecType,
+                      dataType : newpvs.dataType,
+                      value : newpvs.value,
+                      expressionSemantic : newpvs.expressionSemantic,
+                      expressionLogic : newpvs.expressionLogic
+                    };
+                    // Add it to the list
+                    list.statements.push(newpvs_int);
+
+                    // Update the value of the List-Property
+                    let valuestring: string = JSON.stringify({ 'name': list.name, 'carriedID': list.carrierID, 'parentSubmodelID': list.parentSubmodelID, 'pvs': list.statements });
+                    smodel.subthing.writeProperty(list.name, valuestring);
+
+                    //XXX: Check returned uri, what way is useful, what should be returned?
+                    resolve(JSON.stringify({ 'statuscode': 200, 'uri': null }));
+                  }
+                }
+              }                
+
+            } catch (error) {
+              console.warn('Creating new PVS failed (0). ' + error);
+              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+            }
+
+            //return '400' since list could not be found
+            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+          });
+        },
+        thingActionCreatePVS.name
         );
     }
   });
