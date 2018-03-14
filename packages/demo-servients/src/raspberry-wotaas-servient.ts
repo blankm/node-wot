@@ -148,12 +148,12 @@ function main() {
       wotaas = thing;
 
       // Link to Asset this AAS is for
-      let thingPropertyAASID: WoT.ThingPropertyInit = {
+      let thingPropertyAASID: WoT.ThingProperty = {
         name: 'assetid',
         writable: false,
         observable: false,
         //semanticTypes: [{ name: 'assetid', context: 'http://siemens.com/wotaas/context', prefix: 'wotaas' }],
-        type: JSON.stringify({ "type": "uri" }),
+        schema: JSON.stringify({ "type": "uri" }),
         value: "siemens.com/wotaas/device1"
       };
 
@@ -162,9 +162,9 @@ function main() {
       // Services
 
       // Create Submodel
-      let thingActionCreateSubmodel: WoT.ThingActionInit = {
+      let thingActionCreateSubmodel: WoT.ThingAction = {
         name: 'createsubmodel',
-        inputDataDescription: JSON.stringify({
+        inputSchema: JSON.stringify({
           'type': 'object',
           'properties': {
             'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
@@ -176,7 +176,7 @@ function main() {
           }
         }),
         // TODO: Can output be of different structure depending on statuscode?
-        outputDataDescription: JSON.stringify({
+        outputSchema: JSON.stringify({
           'type': 'object',
           'properties': {
             'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 },
@@ -186,9 +186,9 @@ function main() {
       };
 
       // Delete Submodel
-      let thingActionDeleteSubmodel: WoT.ThingActionInit = {
+      let thingActionDeleteSubmodel: WoT.ThingAction = {
         name: 'deletesubmodel',
-        inputDataDescription: JSON.stringify({
+        inputSchema: JSON.stringify({
           'type': 'object',
           'properties': {
             'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
@@ -199,15 +199,15 @@ function main() {
             //'placement' : {} XXX: How to handle placement?
           }
         }),
-        outputDataDescription: JSON.stringify({
+        outputSchema: JSON.stringify({
           'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 },
         })
       };
 
       // Create PVSL/C
-      let thingActionCreatePVSL: WoT.ThingActionInit = {
+      let thingActionCreatePVSL: WoT.ThingAction = {
         name: 'createpvsl',
-        inputDataDescription: JSON.stringify({
+        inputSchema: JSON.stringify({
           'type': 'object',
           'properties': {
             'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
@@ -216,7 +216,7 @@ function main() {
           }
         }),
         // TODO: Can output be of different structure depending on statuscode?
-        outputDataDescription: JSON.stringify({
+        outputSchema: JSON.stringify({
           'type': 'object',
           'properties': {
             'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 },
@@ -226,9 +226,9 @@ function main() {
       };
 
       // Delete PVSL/C
-      let thingActionDeletePVSL: WoT.ThingActionInit = {
+      let thingActionDeletePVSL: WoT.ThingAction = {
         name: 'deletepvsl',
-        inputDataDescription: JSON.stringify({
+        inputSchema: JSON.stringify({
           'type': 'object',
           'properties': {
             'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
@@ -237,7 +237,7 @@ function main() {
           }
         }),
         // TODO: Can output be of different structure depending on statuscode?
-        outputDataDescription: JSON.stringify({
+        outputSchema: JSON.stringify({
           'type': 'object',
           'properties': {
             'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 }
@@ -246,9 +246,9 @@ function main() {
       };
 
       // Create PVS
-      let thingActionCreatePVS: WoT.ThingActionInit = {
+      let thingActionCreatePVS: WoT.ThingAction = {
         name: 'createpvs',
-        inputDataDescription: JSON.stringify({
+        inputSchema: JSON.stringify({
           'type': 'object',
           'properties': {
             'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
@@ -262,7 +262,7 @@ function main() {
           }
         }),
         // TODO: Can output be of different structure depending on statuscode?
-        outputDataDescription: JSON.stringify({
+        outputSchema: JSON.stringify({
           'type': 'object',
           'properties': {
             'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 },
@@ -272,9 +272,9 @@ function main() {
       };
 
       // Delete PVS
-      let thingActionDeletePVS: WoT.ThingActionInit = {
+      let thingActionDeletePVS: WoT.ThingAction = {
         name: 'deletepvs',
-        inputDataDescription: JSON.stringify({
+        inputSchema: JSON.stringify({
           'type': 'object',
           'properties': {
             'name': { 'type': 'string', 'minimum': 3, 'maximum': 255 },
@@ -287,7 +287,7 @@ function main() {
           }
         }),
         // TODO: Can output be of different structure depending on statuscode?
-        outputDataDescription: JSON.stringify({
+        outputSchema: JSON.stringify({
           'type': 'object',
           'properties': {
             'statuscode': { 'type': 'integer', 'minimum': 0, 'maximum': 999 }
@@ -446,12 +446,12 @@ function main() {
 
                   // Create new property for the pvsl
                   // TODO: Add metadata to express it is a pvsl 
-                  let thingPropertyNewPVSL: WoT.ThingPropertyInit = {
+                  let thingPropertyNewPVSL: WoT.ThingProperty = {
                     name: npvsl.name,
                     writable: false,
                     observable: true,
                     //semanticTypes: [{ name: 'assetid', context: 'http://siemens.com/wotaas/context', prefix: 'wotaas' }],
-                    type: JSON.stringify(
+                    schema: JSON.stringify(
                       {
                         'type': 'object',
                         'properties': {
