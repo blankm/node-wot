@@ -64,12 +64,15 @@ enum AASSemType {
   SETTING
 }
 
-declare interface PVSInternal {
+declare interface PVSValue {
+  value: any
+}
+
+declare interface PVSBase{
   name: string,
   IDSpec: string, // Either URI or ISO29005_5
   IDSpecType: AASIDType,
-  dataType: AASDataType,
-  value: any,
+  dataType: AASDataType,  
   expressionSemantic: AASSemType,
   expressionLogic: AASSemLogic,
 
@@ -78,7 +81,15 @@ declare interface PVSInternal {
   // List to appear in (this is not needed since directly stored in list)
 }
 
-declare interface PVS extends PVSInternal {
+declare interface PVSInternal extends PVSBase, PVSValue {}
+
+declare interface PVSCreate extends PVSBase, PVSValue {
+  parentPVSL_ID: USVString,
+  // Views
+  // Visibility  
+}
+
+declare interface PVSDelete extends PVSBase {
   parentPVSL_ID: USVString,
   // Views
   // Visibility  
@@ -260,7 +271,6 @@ function main() {
         })
       };
 
-      // XXX: This here is a problem, value is no needed argument, create new type for deleting PVS?
       // Delete PVS
       let thingActionDeletePVS: WoT.ThingActionInit = {
         name: 'deletepvs',
@@ -468,7 +478,7 @@ function main() {
                         }
                       }
                     ),
-                    value: JSON.stringify({ 'name': newpvsl.name, 'carriedID': newpvsl.carrierID, 'parentSubmodelID': newpvsl.parentSubmodelID, 'pvs': [] })
+                    value: JSON.stringify({ 'name': newpvsl.name, 'carrierID': newpvsl.carrierID, 'parentSubmodelID': newpvsl.parentSubmodelID, 'pvs': [] })
                   };
                   smodel.subthing.addProperty(thingPropertyNewPVSL);
                   // Right now for updating the PVSL entries we must use writeProperty to update value
@@ -495,9 +505,77 @@ function main() {
         },
         thingActionCreatePVSL.name
         )
-        .addAction(thingActionCreatePVSL)
+        .addAction(thingActionDeletePVSL)
         .setActionHandler(
-        (newpvs: PVS) => {
+        (oldpvsl: PVSL) => {
+          return new Promise((resolve, reject) => {
+            // Perform checks on input data and try to create new PVSL
+            try {
+              if (oldpvsl.name.length < 3 || oldpvsl.name.length > 255) {
+                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+              }
+              // Check additional fields
+              // TODO Check fields
+
+              // Check if parentSubmodel exists //XXX: Check if this okay like it is written
+              for (let smodel of submodels) {
+                if (smodel.modelID == oldpvsl.parentSubmodelID) {
+                  // Ok, submodel exists, go on
+                  // Check for match in the list of pvsls
+                  for (let list of smodel.PVSLs) {
+                    if (list.name == oldpvsl.name &&
+                      list.carrierID == oldpvsl.carrierID &&
+                      list.parentSubmodelID == oldpvsl.parentSubmodelID) {
+                        // This is the list to delete
+
+                        // Still entries in it?
+                        if(list.statements.length != 0)
+                        {
+                          // Do we brake in case the list still has some entries?
+                          
+                          return JSON.stringify({ 'statuscode': 409, 'uri': null }); 
+                        }                        
+
+                        // Delete list
+                        let propname: string = list.name;
+
+                        let index = smodel.PVSLs.indexOf(list, 0);
+                        try {
+                          // Remove it from the PVSLs
+                          smodel.PVSLs.splice(index, 1);
+                          // Update the Model-TD
+                          // Delete Property
+                          smodel.subthing.removeProperty(propname);
+
+                        } catch (error) {
+                          console.warn('Deleting PVSL failed (1). ' + error);
+                          return JSON.stringify({ 'statuscode': 500, 'uri': null });
+                        }
+
+                        // Allright, resolve
+                        resolve(JSON.stringify({ 'statuscode': 200}));
+                    }
+                  }
+
+                  // We come here with no match, so return '400'
+                  return JSON.stringify({ 'statuscode': 400, 'uri': null });                  
+                }
+              }
+
+            } catch (error) {
+              console.warn('Deleting PVSL failed (0). ' + error);
+              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+            }
+
+            //return '400' since submodel could not be found
+            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+          });
+        },
+        thingActionDeletePVSL.name
+        )
+        .addAction(thingActionCreatePVS)
+        .setActionHandler(
+        (newpvs: PVSCreate) => {
           return new Promise((resolve, reject) => {
             // Perform checks on input data and try to create new PVS
             try {
@@ -537,7 +615,7 @@ function main() {
                     list.statements.push(newpvs_int);
 
                     // Update the value of the List-Property
-                    let valuestring: string = JSON.stringify({ 'name': list.name, 'carriedID': list.carrierID, 'parentSubmodelID': list.parentSubmodelID, 'pvs': list.statements });
+                    let valuestring: string = JSON.stringify({ 'name': list.name, 'carrierID': list.carrierID, 'parentSubmodelID': list.parentSubmodelID, 'pvs': list.statements });
                     smodel.subthing.writeProperty(list.name, valuestring);
 
                     //XXX: Check returned uri, what way is useful, what should be returned?
@@ -556,10 +634,77 @@ function main() {
           });
         },
         thingActionCreatePVS.name
+        )
+        .addAction(thingActionDeletePVS)
+        .setActionHandler(
+        (oldpvs: PVSDelete) => {
+          return new Promise((resolve, reject) => {
+            // Perform checks on input data and try to create new PVS
+            try {
+              if (oldpvs.name.length < 3 || oldpvs.name.length > 255) {
+                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+              }
+              // Check additional fields
+              // TODO Check fields for correct values if needed (some will fail at check anyway)
+
+              // Check if parentPVSL exists //XXX: Check if this okay like it is written
+              for (let smodel of submodels) {
+                for(let list of smodel.PVSLs) {
+                  // XXX: What is the ID of the list?
+                  if(oldpvs.parentPVSL_ID == list.name)
+                  {
+                    // Okay we have the right list, check for the entry
+                    for(let pvss of list.statements)
+                    {
+                      if (oldpvs.name == pvss.name &&
+                        oldpvs.IDSpec == pvss.IDSpec &&
+                        oldpvs.IDSpecType == pvss.IDSpecType &&
+                        oldpvs.dataType == pvss.dataType &&
+                        oldpvs.expressionSemantic == pvss.expressionSemantic &&
+                        oldpvs.expressionLogic == pvss.expressionLogic)
+                      {
+                        // This is the entry to remove
+                        let index = list.statements.indexOf(pvss, 0);
+                        try {
+                          // Remove it from the list
+                          list.statements.splice(index, 1);
+                          // Update the value of the List-Property
+                          let valuestring: string = JSON.stringify({ 'name': list.name, 'carrierID': list.carrierID, 'parentSubmodelID': list.parentSubmodelID, 'pvs': list.statements });
+                          smodel.subthing.writeProperty(list.name, valuestring); 
+
+                        } catch (error) {
+                          console.warn('Deleting PVS failed (1). ' + error);
+                          return JSON.stringify({ 'statuscode': 500, 'uri': null });
+                        }                        
+                        
+                        resolve(JSON.stringify({ 'statuscode': 200, 'uri': null }));
+                      }
+                    }
+
+                    // Somehow the entry couldnt be found
+                    //return '400' 
+                    return JSON.stringify({ 'statuscode': 400, 'uri': null });                    
+                  }
+                }
+              }                
+
+            } catch (error) {
+              console.warn('Delting PVS failed (0). ' + error);
+              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+            }
+
+            //return '400' since list could not be found
+            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+          });
+        },
+        thingActionDeletePVS.name
         );
     }
   });
 }
+
+
+
 // helper
 
 function ValidURL(str: string) {
