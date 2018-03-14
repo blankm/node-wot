@@ -29,27 +29,31 @@ import ContentSerdes from "../content-serdes";
  */
 export default class ActionResourceListener extends BasicResourceListener implements ResourceListener {
 
+    public readonly name : string;
     private readonly thing : ExposedThing;
-    private readonly description : TD.Interaction;
-    private readonly name : string;
 
-    constructor(thing: ExposedThing, action: TD.Interaction) {
+    constructor(thing: ExposedThing, name: string) {
         super();
         this.thing = thing;
-        this.description = action;
-        this.name = action.name;
+        this.name = name;
     }
 
-    public onInvoke(value: Content): Promise<Content> {
-        let param = ContentSerdes.bytesToValue(value);
-        return this.thing.invokeAction(this.name, param).then((value) => {
+    public onInvoke(input: Content): Promise<Content> {
+        let param;
+        // FIXME: Better way than creating Promise only for reject in catch?
+        try {
+            param = ContentSerdes.bytesToValue(input);
+        } catch(err) {
+            return new Promise<Content>( (resolve, reject) => { reject(err); })
+        }
+        return this.thing.invokeAction(this.name, param).then((output) => {
             // TODO do assertion with this.description and spit warning?
-            if (value === undefined) {
-                // action without outputData - skip ContentSerdes
+            if (output === undefined) {
+                // action without output - skip ContentSerdes
                 return { mediaType: null, body: null };
                 // TODO set status code (TODO) to 2.04
             } else {
-                return ContentSerdes.valueToBytes(value);
+                return ContentSerdes.valueToBytes(output);
             }
         });
     }

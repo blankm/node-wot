@@ -43,7 +43,7 @@ class JsonCodec implements ContentCodec {
   }
 
   bytesToValue(bytes: Buffer): any {
-    //console.log(`JsonCodec parsing '${bytes.toString()}'`);
+    //console.debug(`JsonCodec parsing '${bytes.toString()}'`);
     let parsed: any;
     try {
       parsed = JSON.parse(bytes.toString());
@@ -69,7 +69,7 @@ class JsonCodec implements ContentCodec {
   }
 
   valueToBytes(value: any): Buffer {
-    console.log("JsonCodec serializing", value);
+    //console.debug("JsonCodec serializing", value);
     let body = "";
     if(value !== undefined) {
       body = JSON.stringify(value);
@@ -84,14 +84,14 @@ class TextCodec implements ContentCodec {
   }
 
   bytesToValue(bytes: Buffer): any {
-    console.log(`TextCodec parsing '${bytes.toString()}'`);
+    //console.debug(`TextCodec parsing '${bytes.toString()}'`);
     let parsed: any;
     parsed = bytes.toString();
     return parsed;
   }
 
   valueToBytes(value: any): Buffer {
-    console.log(`TextCodec serializing '${value}'`);
+    //console.debug(`TextCodec serializing '${value}'`);
     let body = "";
     if(value !== undefined) {
       body = value;
@@ -109,7 +109,9 @@ class TextCodec implements ContentCodec {
 export class ContentSerdes {
   private static instance: ContentSerdes;
 
-  public static readonly DEFAULT: string = 'application/json';
+  public static readonly DEFAULT: string = "application/json";
+  // provide DEFAULT also on instance
+  public readonly DEFAUT: string = ContentSerdes.DEFAULT;
   private codecs: Map<string, ContentCodec> = new Map();
   private constructor() { }
 
@@ -117,7 +119,7 @@ export class ContentSerdes {
     if (!this.instance) {
       this.instance = new ContentSerdes();
       this.instance.addCodec(new JsonCodec());
-       this.instance.addCodec(new TextCodec());
+      this.instance.addCodec(new TextCodec());
     }
     return this.instance;
   }
@@ -142,13 +144,12 @@ export class ContentSerdes {
       }
     }
 
-    //console.log(`ContentSerdes deserializing from ${content.mediaType}`);
+    console.debug(`ContentSerdes deserializing from ${content.mediaType}`);
 
     // choose codec based on mediaType
     let isolMediaType: string = this.isolateMediaType(content.mediaType);
 
     if (!this.codecs.has(isolMediaType)) {
-      
       throw new Error(`Unsupported serialisation format: ${content.mediaType}`);
     }
     let codec = this.codecs.get(isolMediaType)
@@ -171,7 +172,7 @@ export class ContentSerdes {
 
     if (value === undefined) console.warn("ContentSerdes valueToBytes got no value");
 
-    console.log(`ContentSerdes serializing to ${mediaType}`);
+    console.debug(`ContentSerdes serializing to ${mediaType}`);
     // choose codec based on mediaType
     if (!this.codecs.has(mediaType)) {
       throw new Error(`Unsupported serialization format: ${mediaType}`)
@@ -185,4 +186,5 @@ export class ContentSerdes {
   }
 }
 
+// export singleton instance
 export default ContentSerdes.get();
