@@ -84,13 +84,13 @@ declare interface PVSBase{
 declare interface PVSInternal extends PVSBase, PVSValue {}
 
 declare interface PVSCreate extends PVSBase, PVSValue {
-  parentPVSL_ID: USVString,
+  PVSLID: USVString,
   // Views
   // Visibility  
 }
 
 declare interface PVSDelete extends PVSBase {
-  parentPVSL_ID: USVString,
+  PVSLID: USVString,
   // Views
   // Visibility  
 }
@@ -139,6 +139,8 @@ function main() {
 
   servient.start().then(wot => {
     console.info('RaspberryServient started');
+
+    submodels = new Array<SubmodelInternal>();
 
     // XXX: Add wotaas context, check what this si about with metadata and semantictypes
     let thingInit: WoT.ThingTemplate = { name: 'wotaas' };
@@ -305,13 +307,13 @@ function main() {
             // Perform checks on input data and try to create new model
             try {
               if (newmodel.name.length < 3 || newmodel.name.length > 255) {
-                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+                reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));
               }
               // Check if name or other identifier already existent
               for (let smodel of submodels) {
                 // TODO: Is modelID also to be checked?
                 if (smodel.name == newmodel.name) {
-                  return JSON.stringify({ 'statuscode': 409, 'uri': null });
+                  reject(JSON.stringify({ 'statuscode': 409, 'uri': null }));
                 }
               }
               // Check parentID and modelID for proper URI
@@ -319,13 +321,13 @@ function main() {
 
               // Check revision and version          
               if (newmodel.revision < 0 || newmodel.version < 0) {
-                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+                reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));
               }
 
 
             } catch (error) {
               console.warn('Creating new Submodel failed (0). ' + error);
-              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+              reject(JSON.stringify({ 'statuscode': 500, 'uri': null }));
             }
 
             // create new submodel
@@ -355,7 +357,7 @@ function main() {
 
             } catch (error) {
               console.warn('Creating new Submodel failed (1). ' + error);
-              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+              reject(JSON.stringify({ 'statuscode': 500, 'uri': null }));
             }
 
             //'200' + urri; // XXX: URI where TD of new submodel can be found 
@@ -372,7 +374,7 @@ function main() {
             try {
               // Check name
               if (delmodel.name.length < 3 || delmodel.name.length > 255) {
-                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+                reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));
               }
 
               // parentID and modelID have to be checked only for length,
@@ -381,12 +383,12 @@ function main() {
 
               // Check revision and version          
               if (delmodel.revision < 0 || delmodel.version < 0) {
-                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+                reject( JSON.stringify({ 'statuscode': 400, 'uri': null }));
               }
 
             } catch (error) {
               console.warn('Deleting Submodel failed (0). ' + error);
-              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+              reject( JSON.stringify({ 'statuscode': 500, 'uri': null }));
             }
             try {
               //Check if name or other identifier existent
@@ -399,13 +401,13 @@ function main() {
 
                   }
                   // XXX: Right now TDs can't be removed, so this function must always fail for now :(
-                  return JSON.stringify({ 'statuscode': 500 });
+                  reject(JSON.stringify({ 'statuscode': 500 }));
                 }
               }
               resolve(JSON.stringify({ 'statuscode': 404 }));
             } catch (error) {
               console.warn('Deleting Submodel failed (1). ' + error);
-              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+              reject(JSON.stringify({ 'statuscode': 500, 'uri': null }));
             }
           });
         },
@@ -418,7 +420,7 @@ function main() {
             // Perform checks on input data and try to create new PVSL
             try {
               if (newpvsl.name.length < 3 || newpvsl.name.length > 255) {
-                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+                reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));
               }
               // Check additional fields
               // TODO Check fields
@@ -431,7 +433,7 @@ function main() {
                   for (let list of smodel.PVSLs) {
                     // TODO: Is carriedID also to be checked?
                     if (list.name == newpvsl.name) {
-                      return JSON.stringify({ 'statuscode': 409, 'uri': null });
+                      reject(JSON.stringify({ 'statuscode': 409, 'uri': null }));
                     }
                   }
 
@@ -496,11 +498,11 @@ function main() {
 
             } catch (error) {
               console.warn('Creating new Submodel failed (0). ' + error);
-              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+              reject(JSON.stringify({ 'statuscode': 500, 'uri': null }));
             }
 
             //return '400' since submodel could not be found
-            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+            reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));
           });
         },
         thingActionCreatePVSL.name
@@ -512,7 +514,7 @@ function main() {
             // Perform checks on input data and try to create new PVSL
             try {
               if (oldpvsl.name.length < 3 || oldpvsl.name.length > 255) {
-                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+                reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));
               }
               // Check additional fields
               // TODO Check fields
@@ -533,7 +535,7 @@ function main() {
                         {
                           // Do we brake in case the list still has some entries?
                           
-                          return JSON.stringify({ 'statuscode': 409, 'uri': null }); 
+                          reject(JSON.stringify({ 'statuscode': 409, 'uri': null })); 
                         }                        
 
                         // Delete list
@@ -549,7 +551,7 @@ function main() {
 
                         } catch (error) {
                           console.warn('Deleting PVSL failed (1). ' + error);
-                          return JSON.stringify({ 'statuscode': 500, 'uri': null });
+                          reject(JSON.stringify({ 'statuscode': 500, 'uri': null }));
                         }
 
                         // Allright, resolve
@@ -558,17 +560,17 @@ function main() {
                   }
 
                   // We come here with no match, so return '400'
-                  return JSON.stringify({ 'statuscode': 400, 'uri': null });                  
+                  reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));                  
                 }
               }
 
             } catch (error) {
               console.warn('Deleting PVSL failed (0). ' + error);
-              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+              reject(JSON.stringify({ 'statuscode': 500, 'uri': null }));
             }
 
             //return '400' since submodel could not be found
-            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+            reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));
           });
         },
         thingActionDeletePVSL.name
@@ -580,7 +582,7 @@ function main() {
             // Perform checks on input data and try to create new PVS
             try {
               if (newpvs.name.length < 3 || newpvs.name.length > 255) {
-                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+                reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));
               }
               // Check additional fields
               // TODO Check fields for correct values if needed (some will fail at check anyway)
@@ -589,7 +591,7 @@ function main() {
               for (let smodel of submodels) {
                 for(let list of smodel.PVSLs) {
                   // XXX: What is the ID of the list?
-                  if(newpvs.parentPVSL_ID == list.name)
+                  if(newpvs.PVSLID == list.name)
                   {
                     // Okay we have the right list, check for doubles
                     for(let pvss of list.statements)
@@ -597,7 +599,7 @@ function main() {
                       if(newpvs.name == pvss.name || (newpvs.IDSpec == pvss.IDSpec && newpvs.IDSpecType == pvss.IDSpecType))
                       {
                         // Some other entry with either the name of the ID exists
-                        return JSON.stringify({ 'statuscode': 409, 'uri': null });
+                        reject(JSON.stringify({ 'statuscode': 409, 'uri': null }));
                       }
                     }
 
@@ -626,11 +628,11 @@ function main() {
 
             } catch (error) {
               console.warn('Creating new PVS failed (0). ' + error);
-              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+              reject(JSON.stringify({ 'statuscode': 500, 'uri': null }));
             }
 
             //return '400' since list could not be found
-            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+            reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));
           });
         },
         thingActionCreatePVS.name
@@ -642,7 +644,7 @@ function main() {
             // Perform checks on input data and try to create new PVS
             try {
               if (oldpvs.name.length < 3 || oldpvs.name.length > 255) {
-                return JSON.stringify({ 'statuscode': 400, 'uri': null });
+                reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));
               }
               // Check additional fields
               // TODO Check fields for correct values if needed (some will fail at check anyway)
@@ -651,7 +653,7 @@ function main() {
               for (let smodel of submodels) {
                 for(let list of smodel.PVSLs) {
                   // XXX: What is the ID of the list?
-                  if(oldpvs.parentPVSL_ID == list.name)
+                  if(oldpvs.PVSLID == list.name)
                   {
                     // Okay we have the right list, check for the entry
                     for(let pvss of list.statements)
@@ -674,7 +676,7 @@ function main() {
 
                         } catch (error) {
                           console.warn('Deleting PVS failed (1). ' + error);
-                          return JSON.stringify({ 'statuscode': 500, 'uri': null });
+                          reject(JSON.stringify({ 'statuscode': 500, 'uri': null }));
                         }                        
                         
                         resolve(JSON.stringify({ 'statuscode': 200, 'uri': null }));
@@ -683,18 +685,18 @@ function main() {
 
                     // Somehow the entry couldnt be found
                     //return '400' 
-                    return JSON.stringify({ 'statuscode': 400, 'uri': null });                    
+                    reject( JSON.stringify({ 'statuscode': 400, 'uri': null }));                    
                   }
                 }
               }                
 
             } catch (error) {
               console.warn('Delting PVS failed (0). ' + error);
-              return JSON.stringify({ 'statuscode': 500, 'uri': null });
+              reject(JSON.stringify({ 'statuscode': 500, 'uri': null }));
             }
 
             //return '400' since list could not be found
-            return JSON.stringify({ 'statuscode': 400, 'uri': null });
+            reject(JSON.stringify({ 'statuscode': 400, 'uri': null }));
           });
         },
         thingActionDeletePVS.name
